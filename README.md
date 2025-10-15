@@ -57,9 +57,11 @@ Each assignment has its own directory with specific instructions. See the README
 # Run all tests
 pytest
 
+# Run with verbose output
+pytest -v
+
 # Run tests for specific assignment
 pytest assignment1-data-aggregation/tests/ -v
-
-# Run tests for assignment 2
-pytest assignment2-producer-consumer/tests/ -v
 ```
+
+The project includes a `pytest.ini` configuration file that automatically sets up the Python path.

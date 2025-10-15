@@ -28,8 +28,7 @@ class DataLoader:
             pd.DataFrame with columns: invoice_no, customer_id, gender, age,
             category, quantity, price, payment_method, invoice_date, shopping_mall
         """
-        # TODO: Implement CSV loading with proper date parsing
-        pass
+        return pd.read_csv(self.csv_path)
 
 
 class DataAggregator:
