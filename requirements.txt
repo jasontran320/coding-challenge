@@ -1,0 +1,7 @@
+# Python dependencies for coding challenge assignments
+
+# Assignment 1: Data Aggregation
+pandas>=2.0.0
+
+# Testing
+pytest>=7.4.0

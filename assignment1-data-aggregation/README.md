@@ -14,7 +14,7 @@ assignment1-data-aggregation/data/customer_shopping_data.csv
 The dataset is large (7.2MB) and has been excluded from version control to keep the repository lightweight.
 
 ### How to obtain the dataset
-- Source: [Provide source/download link here]
+- Source: [customer_shopping_data.csv](https://drive.google.com/file/d/1GZHRdGvhK_e6qRyUFGIodGFLCHj-5U9b/view?usp=sharing)
 - Or use your own customer shopping dataset with the required columns
 
 ### Required CSV Columns
@@ -28,3 +28,24 @@ The dataset is large (7.2MB) and has been excluded from version control to keep 
 - `payment_method`
 - `invoice_date`
 - `shopping_mall`
+
+## Running the Solution
+
+From the project root directory:
+
+```bash
+# Run the solution
+python assignment1-data-aggregation/src/assignment1/solution.py
+```
+
+## Running Tests
+
+From the project root directory:
+
+```bash
+# Run tests
+pytest assignment1-data-aggregation/tests/ -v
+
+# Run with coverage
+pytest assignment1-data-aggregation/tests/ --cov=assignment1
+```
