@@ -45,7 +45,4 @@ From the project root directory:
 ```bash
 # Run tests
 pytest assignment1-data-aggregation/tests/ -v
-
-# Run with coverage
-pytest assignment1-data-aggregation/tests/ --cov=assignment1
 ```
