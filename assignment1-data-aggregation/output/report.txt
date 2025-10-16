@@ -1,0 +1,21 @@
+============================================================
+CUSTOMER SHOPPING DATA ANALYSIS
+============================================================
+
+Task 2 - Customer Count by Gender:
+gender
+Female    59482
+Male      39975
+dtype: int64
+
+Task 3 - Total Sales by Gender:
+Female     $150,207,136.02
+Male       $101,298,658.23
+
+Task 4 - Most Used Payment Method:
+Cash
+
+Task 5 - Day with Highest Sales:
+28/10/2021
+
+============================================================

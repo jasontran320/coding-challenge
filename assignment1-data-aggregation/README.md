@@ -31,12 +31,17 @@ The dataset is large (7.2MB) and has been excluded from version control to keep 
 
 ## Running the Solution
 
-From the project root directory:
+From the `assignment1-data-aggregation/` directory (project root):
 
 ```bash
-# Run the solution
-python assignment1-data-aggregation/src/assignment1/solution.py
+# Simple approach - use the convenience script
+python run.py
+
+# Or use the standard Python module approach
+python -m src.assignment1
 ```
+
+The solution will display results in the console and save a report to `output/report.txt`
 
 ## Running Tests
 

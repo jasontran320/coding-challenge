@@ -8,7 +8,7 @@ Run tests from project root:
 import pytest
 import pandas as pd
 
-from assignment1.solution import DataLoader, DataAggregator
+from assignment1.solution import DataLoader, DataAggregator, ReportGenerator
 from .fixtures import (
     sample_data, empty_dataframe, tie_payment_methods,
     data_with_bad_numeric, data_with_bad_categorical
@@ -219,6 +219,37 @@ class TestDataAggregator:
         assert best_day == '2/1/2023'
 
         print(f"[PASS] Bad categorical data handled correctly")
+
+
+class TestReportGenerator:
+    """Test report generation functionality"""
+
+    def test_generate_report_with_data(self, sample_data):
+        """Test report generation with standard data"""
+        aggregator = DataAggregator(sample_data)
+        results = {
+            'gender_counts': aggregator.count_by_gender(),
+            'sales_by_gender': aggregator.total_sales_by_gender(),
+            'most_used_payment': aggregator.most_used_payment_method(),
+            'best_sales_day': aggregator.day_with_most_sales()
+        }
+
+        report = ReportGenerator.generate_report(results)
+
+        # Check that report is a string
+        assert isinstance(report, str)
+        # Check that report contains expected sections
+        assert "CUSTOMER SHOPPING DATA ANALYSIS" in report
+        assert "Task 2" in report
+        assert "Task 3" in report
+        assert "Task 4" in report
+        assert "Task 5" in report
+        # Check that report contains actual data
+        assert "Male" in report
+        assert "Female" in report
+        assert "Cash" in report
+
+        print(f"[PASS] Report generated successfully")
 
 
 if __name__ == "__main__":

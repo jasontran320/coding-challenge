@@ -207,29 +207,105 @@ class ReportGenerator:
 
     @staticmethod
     def generate_report(results: Dict[str, Any]) -> str:
-        """
-        Generate formatted report from aggregation results
+        """Generate formatted report from aggregation results
 
         Args:
-            results: Dictionary containing all aggregation results
+            results: Dictionary with keys:
+                'gender_counts', 'sales_by_gender', 'most_used_payment', 'best_sales_day'
 
         Returns:
-            Formatted string report
+            Formatted report string
         """
-        # TODO: Implement report formatting
-        pass
+        lines = []
+        lines.append("=" * 60)
+        lines.append("CUSTOMER SHOPPING DATA ANALYSIS")
+        lines.append("=" * 60)
+        lines.append("")
+
+        # Task 2: Count by gender
+        lines.append("Task 2 - Customer Count by Gender:")
+        gender_counts = results.get('gender_counts', pd.Series())
+        lines.append(str(gender_counts) if not gender_counts.empty else "No data")
+        lines.append("")
+
+        # Task 3: Total sales by gender
+        lines.append("Task 3 - Total Sales by Gender:")
+        sales_by_gender = results.get('sales_by_gender', pd.Series())
+        if not sales_by_gender.empty:
+            # Format sales as currency (comma-separated with 2 decimal places)
+            for gender, sales in sales_by_gender.items():
+                lines.append(f"{gender:10} ${sales:,.2f}")
+        else:
+            lines.append("No data")
+        lines.append("")
+
+        # Task 4: Most used payment method
+        lines.append("Task 4 - Most Used Payment Method:")
+        lines.append(results.get('most_used_payment', 'No data'))
+        lines.append("")
+
+        # Task 5: Day with most sales
+        lines.append("Task 5 - Day with Highest Sales:")
+        lines.append(results.get('best_sales_day', 'No data'))
+        lines.append("")
+
+        lines.append("=" * 60)
+        return "\n".join(lines)
+
+    @staticmethod
+    def write_report(results: Dict[str, Any], output_path: str) -> None:
+        """Generate report and write to file
+
+        Args:
+            results: Dictionary containing aggregation results
+            output_path: Path to output file
+        """
+        report = ReportGenerator.generate_report(results)
+        output_file = Path(output_path)
+        output_file.parent.mkdir(parents=True, exist_ok=True)
+        output_file.write_text(report)
 
 
 def main():
-    """Main entry point for the data aggregation solution"""
+    """Main entry point for the data aggregation solution
 
-    # TODO: Wire up all components
-    # 1. Load data
-    # 2. Perform all aggregations
-    # 3. Generate report
-    # 4. Display results
+    Executes the complete pipeline:
+    1. Load data from CSV
+    2. Perform all aggregations (Tasks 2-5)
+    3. Generate and display report
+    4. Write report to file
+    """
+    # Paths (relative to this file's location)
+    script_dir = Path(__file__).parent
+    project_root = script_dir.parent.parent
+    csv_path = project_root / 'data' / 'test.csv'
+    output_path = project_root / 'output' / 'report.txt'
 
-    pass
+    # Task 1: Load data
+    print("Loading data...")
+    loader = DataLoader(str(csv_path))
+    df = loader.load()
+    print(f"Loaded {len(df)} records\n")
+
+    # Create aggregator
+    aggregator = DataAggregator(df)
+
+    # Tasks 2-5: Perform all aggregations
+    print("Performing aggregations...")
+    results = {
+        'gender_counts': aggregator.count_by_gender(),
+        'sales_by_gender': aggregator.total_sales_by_gender(),
+        'most_used_payment': aggregator.most_used_payment_method(),
+        'best_sales_day': aggregator.day_with_most_sales()
+    }
+
+    # Generate and display report
+    report = ReportGenerator.generate_report(results)
+    print(report)
+
+    # Write report to file
+    ReportGenerator.write_report(results, str(output_path))
+    print(f"\nReport saved to: {output_path}")
 
 
 if __name__ == "__main__":

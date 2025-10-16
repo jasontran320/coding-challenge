@@ -49,6 +49,12 @@ coding-challenge/
 
 Each assignment has its own directory with specific instructions. See the README in each assignment folder for details.
 
+**Quick start for Assignment 1:**
+```bash
+cd assignment1-data-aggregation
+python run.py
+```
+
 ### Running Tests
 
 **Important:** Run all tests from the project root directory.
