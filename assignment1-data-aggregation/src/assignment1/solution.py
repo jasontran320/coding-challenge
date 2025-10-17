@@ -6,7 +6,7 @@ Architecture:
 - DataAggregator: Performs grouping and aggregation operations
 - ReportGenerator: Formats and displays results
 
-Design Pattern: Strategy pattern for different aggregation strategies
+Design Pattern: Robust handling of data, from validating schema to handling invalid values
 """
 
 import pandas as pd
@@ -278,7 +278,7 @@ def main():
     # Paths (relative to this file's location)
     script_dir = Path(__file__).parent
     project_root = script_dir.parent.parent
-    csv_path = project_root / 'data' / 'test.csv'
+    csv_path = project_root / 'data' / 'customer_shopping_data.csv'
     output_path = project_root / 'output' / 'report.txt'
 
     # Task 1: Load data

@@ -49,25 +49,27 @@ coding-challenge/
 
 Each assignment has its own directory with specific instructions. See the README in each assignment folder for details.
 
-**Quick start for Assignment 1:**
+**Quick start:**
 ```bash
+# Assignment 1
 cd assignment1-data-aggregation
+python run.py
+
+# Assignment 2
+cd assignment2-producer-consumer
 python run.py
 ```
 
 ### Running Tests
 
-**Important:** Run all tests from the project root directory.
+**Important:** Run tests from the project root directory, specifying which assignment to test.
 
 ```bash
-# Run all tests
-pytest
-
-# Run with verbose output
-pytest -v
-
-# Run tests for specific assignment
+# Run Assignment 1 tests
 pytest assignment1-data-aggregation/tests/ -v
+
+# Run Assignment 2 tests
+pytest assignment2-producer-consumer/tests/ -v
 ```
 
-The project includes a `pytest.ini` configuration file that automatically sets up the Python path.
+The project includes a `pytest.ini` configuration file that automatically sets up the Python path for both assignments.
