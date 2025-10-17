@@ -13,7 +13,7 @@ import threading
 from collections import deque
 from typing import List, Union, Optional
 
-from assignment2.validation import is_valid_number
+from assignment2.validation import is_valid_number, is_positive_int
 
 Number = Union[int, float]
 
@@ -32,10 +32,8 @@ class Container:
     """
 
     def __init__(self, capacity: int):
-        if not isinstance(capacity, int):
-            raise TypeError(f"Capacity must be int, got {type(capacity).__name__}")
-        if capacity <= 0:
-            raise ValueError(f"Capacity must be positive, got {capacity}")
+        if not is_positive_int(capacity):
+            raise ValueError(f"Capacity must be a positive integer, got {capacity}")
 
         self._lock = threading.Lock()
         self.capacity = capacity
@@ -115,12 +113,14 @@ class BoundedQueue:
     """
 
     def __init__(self, capacity: int):
-        """Initialize bounded queue with fixed capacity
+        """Initialize bounded queue with fixed capacity"""
+        if not is_positive_int(capacity):
+            raise ValueError(f"Capacity must be a positive integer, got {capacity}")
 
-        TODO: Set up a bounded queue with synchronization primitives for producer-consumer coordination
-        """
-        # TODO: Implement initialization
-        pass
+        self.capacity = capacity
+        self._data = deque(maxlen=capacity)
+        self._condition = threading.Condition()
+        self._finished = False
 
     def put(self, item: Number) -> None:
         """Task 4: Producer puts item into queue
@@ -130,11 +130,29 @@ class BoundedQueue:
         Args:
             item: Number to add to queue
 
-        TODO: Add item to queue, blocking if full, and notify waiting consumers
-        Note: Handle spurious wakeups properly
+        Raises:
+            TypeError: If item is not a valid number
+            RuntimeError: If queue is marked as finished
+
+        Note:
+            Blocks indefinitely until space is available.
+            Consumer must call get() to free space.
         """
-        # TODO: Implement blocking put with notification
-        pass
+        if not is_valid_number(item):
+            raise TypeError(
+                f"Queue expects integer or float, "
+                f"got {type(item).__name__}"
+            )
+
+        with self._condition:
+            while self._is_full() and not self._finished:
+                self._condition.wait()
+
+            if self._finished:
+                raise RuntimeError("Cannot add to finished queue")
+
+            self._data.append(item)
+            self._condition.notify()
 
     def get(self) -> Optional[Number]:
         """Task 5: Consumer gets item from queue
@@ -145,35 +163,55 @@ class BoundedQueue:
         Returns:
             Number from queue, or None if finished
 
-        TODO: Remove and return item from queue, blocking if empty, and notify waiting producers
-        Note: Handle graceful shutdown when producer is finished
+        Note:
+            Blocks indefinitely until an item is available or queue is finished.
+            Producer must call mark_finished() to allow graceful shutdown.
         """
-        # TODO: Implement blocking get with notification
-        pass
+        with self._condition:
+            while self._is_empty() and not self._finished:
+                self._condition.wait()
 
+            if self._is_empty() and self._finished:
+                return None
+
+            item = self._data.popleft()
+            self._condition.notify()
+            return item
+ 
     def is_full(self) -> bool:
-        """Check if queue is at capacity
+        """Check if queue is at capacity (thread-safe)
 
-        TODO: Return whether the queue has reached its maximum capacity
+        Returns:
+            True if queue is at maximum capacity, False otherwise
         """
-        # TODO: Implement is_full check
-        pass
+        with self._condition:
+            return self._is_full()
 
     def is_empty(self) -> bool:
-        """Check if queue is empty
+        """Check if queue is empty (thread-safe)
 
-        TODO: Return whether the queue contains no items
+        Returns:
+            True if queue contains no items, False otherwise
         """
-        # TODO: Implement is_empty check
-        pass
+        with self._condition:
+            return self._is_empty()
 
     def mark_finished(self) -> None:
         """Signal that no more items will be produced
 
-        TODO: Signal completion to waiting consumers so they can exit gracefully
+        Notifies all waiting consumers to check finished status.
         """
-        # TODO: Implement mark_finished
-        pass
+        with self._condition:
+            self._finished = True
+            self._condition.notify_all()
+
+    def _is_full(self) -> bool:
+        """Internal check if queue is at capacity (assumes lock held)"""
+        return len(self._data) >= self.capacity
+
+    def _is_empty(self) -> bool:
+        """Internal check if queue is empty (assumes lock held)"""
+        return len(self._data) == 0
 
 
 class Producer(threading.Thread):

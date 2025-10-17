@@ -33,3 +33,30 @@ def is_valid_number(value: Any) -> bool:
         False
     """
     return isinstance(value, (int, float)) and not isinstance(value, bool)
+
+
+def is_positive_int(value: Any) -> bool:
+    """Check if value is a positive integer
+
+    Args:
+        value: Value to check
+
+    Returns:
+        True if value is a positive integer, False otherwise
+
+    Note:
+        Returns False for non-integers, zero, negative numbers, and booleans.
+
+    Examples:
+        >>> is_positive_int(10)
+        True
+        >>> is_positive_int(0)
+        False
+        >>> is_positive_int(-5)
+        False
+        >>> is_positive_int("10")
+        False
+        >>> is_positive_int(True)
+        False
+    """
+    return isinstance(value, int) and not isinstance(value, bool) and value > 0

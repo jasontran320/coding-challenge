@@ -7,6 +7,7 @@ Run tests from project root:
 
 import pytest
 import threading
+import time
 
 from assignment2.solution import (
     Container, BoundedQueue, Producer, Consumer, ProducerConsumerCoordinator
@@ -103,33 +104,130 @@ class TestBoundedQueue:
 
     def test_queue_creation(self):
         """Test creating queue with capacity"""
-        # TODO: Verify queue initializes with correct capacity and is empty
-        pass
+        queue = BoundedQueue(5)
+        assert queue.capacity == 5
+        assert queue.is_empty()
+        assert not queue.is_full()
 
-    def test_put_and_get(self):
-        """Test putting and getting items"""
-        # TODO: Verify items are retrieved in FIFO order
-        pass
+    def test_put_and_get_fifo(self):
+        """Test FIFO ordering"""
+        queue = BoundedQueue(3)
+        queue.put(10)
+        queue.put(20)
+        queue.put(30)
 
-    def test_is_full(self):
-        """Test queue full detection"""
-        # TODO: Verify is_full() returns True when at capacity
-        pass
+        assert queue.get() == 10
+        assert queue.get() == 20
+        assert queue.get() == 30
 
-    def test_blocking_when_full(self):
+    def test_is_full_and_empty(self):
+        """Test full and empty detection"""
+        queue = BoundedQueue(2)
+        assert queue.is_empty()
+
+        queue.put(1)
+        assert not queue.is_empty()
+        assert not queue.is_full()
+
+        queue.put(2)
+        assert queue.is_full()
+
+        queue.get()
+        assert not queue.is_full()
+
+    def test_blocking_put(self):
         """Test that put blocks when queue is full"""
-        # TODO: Verify put() blocks when queue is full and unblocks when space available
-        pass
+        queue = BoundedQueue(2)
+        queue.put(1)
+        queue.put(2)
 
-    def test_blocking_when_empty(self):
+        put_completed = []
+
+        def blocking_put():
+            queue.put(3)  # Should block
+            put_completed.append(True)
+
+        t = threading.Thread(target=blocking_put)
+        t.start()
+
+        # Give thread time to block
+        time.sleep(0.1)
+        assert len(put_completed) == 0  # Should still be blocked
+
+        # Unblock by getting an item
+        assert queue.get() == 1  # Get first item, makes space
+        t.join(timeout=1.0)
+
+        assert len(put_completed) == 1  # Should have completed
+        # Queue now has [2, 3]
+        assert queue.get() == 2
+        assert queue.get() == 3
+
+    def test_blocking_get(self):
         """Test that get blocks when queue is empty"""
-        # TODO: Verify get() blocks when queue is empty and unblocks when item available
-        pass
+        queue = BoundedQueue(2)
+
+        result = []
+
+        def blocking_get():
+            item = queue.get()  # Should block
+            result.append(item)
+
+        t = threading.Thread(target=blocking_get)
+        t.start()
+
+        # Give thread time to block
+        time.sleep(0.1)
+        assert len(result) == 0  # Should still be blocked
+
+        # Unblock by putting an item
+        queue.put(42)
+        t.join(timeout=1.0)
+
+        assert result == [42]
+
+    def test_graceful_shutdown(self):
+        """Test mark_finished allows graceful shutdown"""
+        queue = BoundedQueue(2)
+        queue.put(1)
+        queue.put(2)
+
+        # Get items then mark finished
+        assert queue.get() == 1
+        assert queue.get() == 2
+
+        queue.mark_finished()
+
+        # Get on finished empty queue returns None
+        assert queue.get() is None
+
+        # Put on finished queue raises error
+        with pytest.raises(RuntimeError):
+            queue.put(3)
 
     def test_thread_safety(self):
-        """Test that container is thread-safe"""
-        # TODO: Verify concurrent add operations don't cause data corruption
-        pass
+        """Test concurrent operations don't corrupt data"""
+        queue = BoundedQueue(5)
+        results = []
+
+        def putter():
+            queue.put(1)
+            queue.put(2)
+
+        def getter():
+            results.append(queue.get())
+            results.append(queue.get())
+
+        # Run put and get concurrently
+        t1 = threading.Thread(target=putter)
+        t2 = threading.Thread(target=getter)
+        t1.start()
+        t2.start()
+        t1.join()
+        t2.join()
+
+        # Verify both items received correctly
+        assert sorted(results) == [1, 2]
 
 
 class TestProducer:
