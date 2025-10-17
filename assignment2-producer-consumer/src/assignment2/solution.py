@@ -13,8 +13,9 @@ import threading
 from collections import deque
 from typing import List, Union, Optional
 
-Number = Union[int, float]
+from assignment2.validation import is_valid_number
 
+Number = Union[int, float]
 
 class Container:
     """Generic container for storing numbers (integers and doubles)
@@ -23,31 +24,45 @@ class Container:
     integers and floating-point numbers.
 
     Args:
-        capacity: Maximum number of elements the container can hold
+        capacity: Maximum number of elements this container can hold
+
+    Raises:
+        TypeError: If capacity is not an integer
+        ValueError: If capacity is not positive
     """
 
     def __init__(self, capacity: int):
-        """Initialize container with fixed capacity
+        if not isinstance(capacity, int):
+            raise TypeError(f"Capacity must be int, got {type(capacity).__name__}")
+        if capacity <= 0:
+            raise ValueError(f"Capacity must be positive, got {capacity}")
 
-        TODO: Set up a thread-safe container that can store numbers at specific indices
-        """
-        # TODO: Implement initialization
-        pass
-
-    def add(self, value: Number, index: int) -> None:
-        """Add a number at specific index
+        self._lock = threading.Lock()
+        self.capacity = capacity
+        self._data = [None] * capacity
+        self._size = 0
+        
+    def add(self, value: Number) -> None:
+        """Add a number to the next available position
 
         Args:
             value: Number (int or float) to add
-            index: Position to add the value
 
         Raises:
-            IndexError: If index is out of range
-
-        TODO: Store the value at the given index in a thread-safe manner with validation
+            ValueError: If container is full
+            TypeError: If value is not a number
         """
-        # TODO: Implement thread-safe add operation
-        pass
+        if not is_valid_number(value):
+            raise TypeError(
+                f"Container expects integer or float, "
+                f"got {type(value).__name__}"
+            )
+
+        with self._lock:
+            if self._size >= self.capacity:
+                raise ValueError("Container is full")
+            self._data[self._size] = value
+            self._size += 1
 
     def get(self, index: int) -> Optional[Number]:
         """Get number at specific index
@@ -61,26 +76,33 @@ class Container:
         Raises:
             IndexError: If index is out of range
 
-        TODO: Retrieve the value at the given index in a thread-safe manner with validation
         """
-        # TODO: Implement thread-safe get operation
-        pass
+        if not self._is_valid_index(index):
+            raise IndexError(f"Index {index} out of range [0, {self.capacity})")
+        
+        with self._lock:
+            return self._data[index]
 
     def size(self) -> int:
-        """Return current number of elements
+        """Return current number of elements (non-None values)
 
-        TODO: Return the count of items stored in the container (thread-safe)
+        Returns:
+            Count of items currently stored in the container
         """
-        # TODO: Return current size
-        pass
+        with self._lock:
+            return self._size
 
     def __len__(self) -> int:
         """Return capacity (for len() calls)
 
-        TODO: Return the maximum capacity of the container
+        Returns:
+            Maximum capacity of the container
         """
-        # TODO: Return capacity
-        pass
+        return self.capacity
+
+    def _is_valid_index(self, index: int) -> bool:
+        """Check if index is within container bounds"""
+        return 0 <= index < self.capacity
 
 
 class BoundedQueue:

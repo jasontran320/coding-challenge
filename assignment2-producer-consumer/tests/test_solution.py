@@ -6,7 +6,6 @@ Run tests from project root:
 """
 
 import pytest
-import time
 import threading
 
 from assignment2.solution import (
@@ -22,23 +21,81 @@ class TestContainer:
 
     def test_container_creation(self):
         """Test creating container with specified capacity"""
-        # TODO: Verify container initializes with correct capacity
-        pass
+        container = Container(10)
+        assert len(container) == 10
+        assert container.capacity == 10
+        assert container.size() == 0
 
     def test_add_and_get(self):
         """Test adding and getting values"""
-        # TODO: Verify values can be stored and retrieved at specific indices
-        pass
+        container = Container(5)
+        container.add(10)
+        container.add(20)
+        container.add(30)
+
+        assert container.get(0) == 10
+        assert container.get(1) == 20
+        assert container.get(2) == 30
+        assert container.size() == 3
 
     def test_mixed_types(self):
         """Test storing both integers and floats"""
-        # TODO: Verify container handles both int and float types correctly
-        pass
+        container = Container(5)
+        container.add(42)
+        container.add(3.14)
+        container.add(100)
+        container.add(2.718)
+
+        assert container.get(0) == 42
+        assert isinstance(container.get(0), int)
+        assert container.get(1) == 3.14
+        assert isinstance(container.get(1), float)
+        assert container.size() == 4
+
+    def test_add_when_full(self):
+        """Test adding to full container raises ValueError"""
+        container = Container(3)
+        container.add(1)
+        container.add(2)
+        container.add(3)
+
+        with pytest.raises(ValueError, match="Container is full"):
+            container.add(4)
+
+    def test_get_invalid_index(self):
+        """Test getting with invalid index raises IndexError"""
+        container = Container(5)
+        container.add(10)
+
+        with pytest.raises(IndexError):
+            container.get(-1)
+        with pytest.raises(IndexError):
+            container.get(5)
 
     def test_thread_safety(self):
-        """Test that container is thread-safe"""
-        # TODO: Verify concurrent add operations don't cause data corruption
-        pass
+        """Test that concurrent add operations are thread-safe"""
+        container = Container(100)
+
+        def add_numbers(start, count):
+            for i in range(count):
+                container.add(start + i)
+
+        # Create 10 threads, each adding 10 unique numbers
+        threads = []
+        for i in range(10):
+            t = threading.Thread(target=add_numbers, args=(i * 10, 10))
+            threads.append(t)
+            t.start()
+
+        for t in threads:
+            t.join()
+
+        # Verify correct size
+        assert container.size() == 100
+
+        # Verify all values present (0-99) with no corruption
+        values = [container.get(i) for i in range(100)]
+        assert sorted(values) == list(range(100))
 
 
 class TestBoundedQueue:
