@@ -307,10 +307,53 @@ class TestProducer:
 class TestConsumer:
     """Test Consumer thread (Task 5)"""
 
-    def test_consumer_writes_all_items(self):
-        """Test that consumer writes all items to destination"""
-        # TODO: Verify consumer transfers all items from queue to destination
-        pass
+    def test_consumer_transfers_all_items(self):
+        """Test that consumer transfers all items from queue to destination"""
+        # Setup: Create queue with test data
+        queue = BoundedQueue(5)
+        queue.put(10)
+        queue.put(20)
+        queue.put(30)
+        queue.put(40)
+        queue.put(50)
+        queue.mark_finished()
+
+        # Create destination container
+        destination = Container(5)
+
+        # Create and run consumer
+        consumer = Consumer(queue, destination)
+        consumer.start()
+        consumer.join()
+
+        # Verify consumer stopped gracefully
+        assert not consumer.is_alive()
+
+        # Verify all items transferred in order
+        assert destination.size() == 5
+        assert destination.get(0) == 10
+        assert destination.get(1) == 20
+        assert destination.get(2) == 30
+        assert destination.get(3) == 40
+        assert destination.get(4) == 50
+
+    def test_consumer_auto_naming(self):
+        """Test that consumer auto-generates names when not provided"""
+        queue = BoundedQueue(1)
+        destination = Container(1)
+
+        # Create consumers without explicit names
+        consumer1 = Consumer(queue, destination)
+        consumer2 = Consumer(queue, destination)
+        consumer3 = Consumer(queue, destination, name="CustomConsumer")
+
+        # Check auto-generated names
+        assert "Consumer-" in consumer1.name
+        assert "Consumer-" in consumer2.name
+        assert consumer1.name != consumer2.name  # Should be unique
+
+        # Check custom name preserved
+        assert consumer3.name == "CustomConsumer"
 
 
 class TestProducerConsumer:

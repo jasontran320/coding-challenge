@@ -266,24 +266,38 @@ class Consumer(threading.Thread):
     Args:
         queue: BoundedQueue to read numbers from
         destination: Container to write numbers to
-        name: Thread name for debugging
+        name: Thread name for debugging (auto-generated as "Consumer-N" if not provided)
     """
 
-    def __init__(self, queue: BoundedQueue, destination: Container, name: str = "Consumer"):
+    _counter = 0
+    _counter_lock = threading.Lock()
+
+    def __init__(self, queue: BoundedQueue, destination: Container, name: str = None):
         """Initialize consumer thread
 
-        TODO: Set up the consumer thread with references to queue and destination
+        Args:
+            queue: BoundedQueue to read numbers from
+            destination: Container to write numbers to
+            name: Thread name for debugging (auto-generated as "Consumer-N" if not provided)
         """
-        # TODO: Implement initialization
-        pass
+        if name is None:
+            with Consumer._counter_lock:
+                Consumer._counter += 1
+                name = f"Consumer-{Consumer._counter}"
+
+        super().__init__(name=name)
+        self.queue = queue
+        self.destination = destination
 
     def run(self) -> None:
         """Read numbers from queue and write to destination container
 
-        TODO: Continuously read items from queue and write to destination until signaled to stop
+        Continuously reads from queue until None is received (finished signal).
         """
-        # TODO: Implement consumer logic
-        pass
+        item = self.queue.get()
+        while item is not None:
+            self.destination.add(item)
+            item = self.queue.get()
 
 
 class ProducerConsumerCoordinator:
