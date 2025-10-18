@@ -25,8 +25,8 @@ coding-challenge/
 
 1. **Clone the repository**
    ```bash
-   git clone <repository-url>
-   cd Level\ 2\ Coding\ Challenge\ 1
+   git clone https://github.com/jasontran320/coding-challenge.git
+   cd coding-challenge
    ```
 
 2. **Create a virtual environment** (recommended)
