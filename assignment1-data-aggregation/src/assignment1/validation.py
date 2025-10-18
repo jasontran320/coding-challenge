@@ -114,25 +114,37 @@ def validate_dataframe_types(df: pd.DataFrame) -> None:
     validate_string_columns(df, STRING_COLUMNS)
 
 
-def _filter_sortable_indices(indices: pd.Index, sort_key: Callable[[str], Any]) -> List[str]:
-    """Filter indices to only those that can be processed by sort_key function
+def _filter_sortable_indices(indices: pd.Index, sort_key: Optional[Callable[[str], Any]] = None) -> List[str]:
+    """Filter indices to only valid values, optionally testing against sort_key
 
     Args:
         indices: Index values to filter
-        sort_key: Function to test each index value against
+        sort_key: Optional function to test each index value against.
+                  If None, only filters empty/whitespace values.
 
     Returns:
-        List[str]: Indices that successfully pass through sort_key without raising exceptions
+        List[str]: Valid indices (non-empty/whitespace, and if sort_key provided,
+                   those that successfully pass through sort_key without raising exceptions)
     """
-    sortable = []
+    valid = []
     for idx in indices:
-        try:
-            sort_key(idx)
-            sortable.append(idx)
-        except (ValueError, TypeError, AttributeError):
-            # Skip indices that can't be processed by sort_key
+        # Always filter empty/whitespace-only values
+        if str(idx).strip() == '':
             continue
-    return sortable
+
+        # If sort_key provided, test if index can be processed
+        if sort_key is not None:
+            try:
+                sort_key(idx)
+                valid.append(idx)
+            except (ValueError, TypeError, AttributeError):
+                # Skip indices that can't be processed by sort_key
+                continue
+        else:
+            # No sort_key, just keep non-empty values
+            valid.append(idx)
+
+    return valid
 
 
 def get_max_with_valid_index(
@@ -168,14 +180,16 @@ def get_max_with_valid_index(
         >>> get_max_with_valid_index(sales, sort_key=lambda x: datetime.strptime(x, '%m/%d/%Y'))
         '3/8/2022'  # Invalid format '2023-01-02' filtered out, earliest valid date returned
     """
-    # Filter out empty/whitespace-only index values
-    valid_series = series[series.index.str.strip() != '']
-    
-    if valid_series.empty:
+    # Filter to only valid indices (handles both empty/whitespace AND invalid sort_key values)
+    valid_indices = _filter_sortable_indices(series.index, sort_key)
+
+    if len(valid_indices) == 0:
         return ""
 
-    # Handle ties: if multiple indices have same max value,
-    # return the first by sort order
+    # Work with filtered series
+    valid_series = series[valid_indices]
+
+    # Find max value from valid indices only
     max_value = valid_series.max()
     ties = valid_series[valid_series == max_value]
 
@@ -183,17 +197,10 @@ def get_max_with_valid_index(
     if len(ties) == 1:
         return ties.index[0]
 
-    # Initiate tie-breaking algorithim
+    # Multiple ties - break tie by sorting
     if sort_key is not None:
-        # Filter out indices that raise exceptions when passed to sort_key
-        sortable_indices = _filter_sortable_indices(ties.index, sort_key)
-
-        # If no valid indices after filtering, return empty string
-        if len(sortable_indices) == 0:
-            return ""
-
-        # Sort using custom key function for tie-breaking
-        sorted_indices = sorted(sortable_indices, key=sort_key)
+        # All indices already validated by _filter_sortable_indices
+        sorted_indices = sorted(ties.index, key=sort_key)
         return sorted_indices[0]
     else:
         # Default: alphabetical tie-breaking
