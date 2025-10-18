@@ -9,11 +9,14 @@ Architecture:
 - ProducerConsumerCoordinator: Manages producer/consumer lifecycle
 """
 
+import logging
 import threading
 from collections import deque
 from typing import List, Union, Optional
 
-from assignment2.validation import is_valid_number, is_positive_int
+from .validation import is_valid_number, is_positive_int, configure_logging
+
+logger = logging.getLogger(__name__)
 
 Number = Union[int, float]
 
@@ -75,10 +78,9 @@ class Container:
             IndexError: If index is out of range
 
         """
-        if not self._is_valid_index(index):
-            raise IndexError(f"Index {index} out of range [0, {self.capacity})")
-        
         with self._lock:
+            if not self._is_valid_index(index):
+                raise IndexError(f"Index {index} out of range [0, {self.capacity})")
             return self._data[index]
 
     def size(self) -> int:
@@ -252,10 +254,14 @@ class Producer(threading.Thread):
         Transfers all items from source container to queue, then signals
         completion by calling mark_finished() on the queue.
         """
+        logger.info(f"[{self.name}] Starting to read from source ({self.source.size()} items)")
         for i in range(self.source.size()):
             item = self.source.get(i)
+            logger.debug(f"[{self.name}] Putting item {item} into queue")
             self.queue.put(item)
+        logger.info(f"[{self.name}] Finished reading all items, marking queue as finished")
         self.queue.mark_finished()
+
 
 class Consumer(threading.Thread):
     """Task 5: Consumer thread that reads from queue to destination container
@@ -264,20 +270,20 @@ class Consumer(threading.Thread):
     Notifies producer when queue becomes empty.
 
     Args:
-        queue: BoundedQueue to read numbers from
         destination: Container to write numbers to
+        queue: BoundedQueue to read numbers from
         name: Thread name for debugging (auto-generated as "Consumer-N" if not provided)
     """
 
     _counter = 0
     _counter_lock = threading.Lock()
 
-    def __init__(self, queue: BoundedQueue, destination: Container, name: str = None):
+    def __init__(self, destination: Container, queue: BoundedQueue, name: str = None):
         """Initialize consumer thread
 
         Args:
-            queue: BoundedQueue to read numbers from
             destination: Container to write numbers to
+            queue: BoundedQueue to read numbers from
             name: Thread name for debugging (auto-generated as "Consumer-N" if not provided)
         """
         if name is None:
@@ -286,18 +292,21 @@ class Consumer(threading.Thread):
                 name = f"Consumer-{Consumer._counter}"
 
         super().__init__(name=name)
-        self.queue = queue
         self.destination = destination
+        self.queue = queue
 
     def run(self) -> None:
         """Read numbers from queue and write to destination container
 
         Continuously reads from queue until None is received (finished signal).
         """
+        logger.info(f"[{self.name}] Starting to read from queue")
         item = self.queue.get()
         while item is not None:
+            logger.debug(f"[{self.name}] Got item {item} from queue, writing to destination")
             self.destination.add(item)
             item = self.queue.get()
+        logger.info(f"[{self.name}] Received None (finished signal), shutting down")
 
 
 class ProducerConsumerCoordinator:
@@ -306,6 +315,12 @@ class ProducerConsumerCoordinator:
     Sets up all components (source, destination, queue, producer, consumer)
     and manages their lifecycle.
 
+    Typical usage:
+        coordinator = ProducerConsumerCoordinator(data)
+        coordinator.run()  # Start threads and wait for completion
+        if coordinator.verify():
+            print("Transfer successful!")
+
     Args:
         source_data: List of integers and doubles to process
     """
@@ -313,51 +328,121 @@ class ProducerConsumerCoordinator:
     def __init__(self, source_data: List[Number]):
         """Initialize the producer-consumer system
 
-        Task 1: Create source container and populate with data
-        Task 2: Create destination container with same capacity
-        Task 3: Create queue with half capacity
-        Task 4 & 5: Create producer and consumer threads
+        Creates all components: source container, destination container,
+        bounded queue, producer thread, and consumer thread.
 
-        TODO: Set up all components - source/destination containers, bounded queue, and threads
+        Args:
+            source_data: List of numbers to transfer from source to destination
+
+        Raises:
+            ValueError: If source_data contains invalid number types
         """
-        # TODO: Implement complete system setup
-        pass
+        self.capacity = len(source_data)
+
+        # Task 1: Create and populate source container
+        self.source = Container(self.capacity)
+        for item in source_data:
+            self.source.add(item)
+
+        # Task 2: Create destination container with same capacity
+        self.destination = Container(self.capacity)
+
+        # Task 3: Create queue with half capacity (minimum 1)
+        self.queue = BoundedQueue(max(1, self.capacity // 2))
+
+        # Task 4 & 5: Create producer and consumer threads
+        self.producer = Producer(self.source, self.queue)
+        self.consumer = Consumer(self.destination, self.queue)
 
     def start(self) -> None:
         """Start producer and consumer threads
 
-        TODO: Start both producer and consumer threads concurrently
+        Starts both threads concurrently without blocking.
+        Use wait_completion() to wait for threads to finish.
         """
-        # TODO: Start both threads
-        pass
+        self.producer.start()
+        self.consumer.start()
 
     def wait_completion(self) -> None:
         """Wait for both threads to complete
 
-        TODO: Wait for both threads to finish their work
+        Blocks until both producer and consumer threads have finished.
         """
-        # TODO: Join both threads
-        pass
+        self.producer.join()
+        self.consumer.join()
+
+    def run(self) -> None:
+        """Start threads and wait for completion
+
+        Convenience method that combines start() and wait_completion().
+        This is the recommended way to run the producer-consumer system.
+        """
+        self.start()
+        self.wait_completion()
 
     def verify(self) -> bool:
         """Task 6: Verify all numbers copied from source to destination
 
-        Returns:
-            True if all numbers match, False otherwise
+        Compares source and destination containers to ensure all data
+        was transferred correctly in the same order with matching types.
 
-        TODO: Compare source and destination containers to confirm all data transferred correctly
+        Returns:
+            True if all numbers match (value and type), False otherwise
         """
-        # TODO: Implement verification logic
-        pass
+        # Check if sizes match
+        if self.source.size() != self.destination.size():
+            return False
+
+        # Compare each element (value and type)
+        for i in range(self.source.size()):
+            if not self._elements_match(self.source.get(i), self.destination.get(i)):
+                return False
+
+        return True
+
+    def _elements_match(self, source_val: Number, dest_val: Number) -> bool:
+        """Check if two elements match in both value and type
+
+        Args:
+            source_val: Value from source container
+            dest_val: Value from destination container
+
+        Returns:
+            True if values and types match, False otherwise
+        """
+        return source_val == dest_val and type(source_val) == type(dest_val)
 
 
 def main():
     """Main entry point demonstrating the producer-consumer solution
 
-    TODO: Create and run the complete producer-consumer system, then verify the results
+    Creates a sample dataset, runs the producer-consumer system,
+    and verifies the transfer completed successfully.
+
+    Note:
+        Log output interleaving is non-deterministic due to OS thread scheduling.
+        Each run may show different execution patterns, but all demonstrate
+        correct producer-consumer behavior with proper synchronization.
     """
-    # TODO: Wire up coordinator, execute transfer, and verify results
-    pass
+    # Configure logging to output/report.txt
+    log_file = configure_logging()
+
+    # Create sample data with mixed integers and floats
+    sample_data = [10, 20.5, 30, 40.7, 50, 60.3, 70, 80.1, 90, 100]
+
+    print(f"Starting producer-consumer transfer with {len(sample_data)} items...")
+    print(f"Logging to: {log_file}")
+
+    # Create and run coordinator
+    coordinator = ProducerConsumerCoordinator(sample_data)
+    coordinator.run()
+
+    # Verify the transfer
+    if coordinator.verify():
+        print("Transfer completed successfully!")
+        print(f"All {coordinator.destination.size()} items transferred correctly.")
+    else:
+        print("Transfer verification failed!")
 
 
 if __name__ == "__main__":

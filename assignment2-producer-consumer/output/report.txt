@@ -1,0 +1,24 @@
+2025-10-18 11:50:27,902 - [Producer-1] Starting to read from source (10 items)
+2025-10-18 11:50:27,902 - [Consumer-1] Starting to read from queue
+2025-10-18 11:50:27,902 - [Producer-1] Putting item 10 into queue
+2025-10-18 11:50:27,902 - [Producer-1] Putting item 20.5 into queue
+2025-10-18 11:50:27,902 - [Consumer-1] Got item 10 from queue, writing to destination
+2025-10-18 11:50:27,902 - [Producer-1] Putting item 30 into queue
+2025-10-18 11:50:27,902 - [Consumer-1] Got item 20.5 from queue, writing to destination
+2025-10-18 11:50:27,902 - [Producer-1] Putting item 40.7 into queue
+2025-10-18 11:50:27,902 - [Consumer-1] Got item 30 from queue, writing to destination
+2025-10-18 11:50:27,902 - [Producer-1] Putting item 50 into queue
+2025-10-18 11:50:27,902 - [Consumer-1] Got item 40.7 from queue, writing to destination
+2025-10-18 11:50:27,902 - [Producer-1] Putting item 60.3 into queue
+2025-10-18 11:50:27,902 - [Consumer-1] Got item 50 from queue, writing to destination
+2025-10-18 11:50:27,902 - [Producer-1] Putting item 70 into queue
+2025-10-18 11:50:27,902 - [Consumer-1] Got item 60.3 from queue, writing to destination
+2025-10-18 11:50:27,902 - [Producer-1] Putting item 80.1 into queue
+2025-10-18 11:50:27,902 - [Consumer-1] Got item 70 from queue, writing to destination
+2025-10-18 11:50:27,902 - [Producer-1] Putting item 90 into queue
+2025-10-18 11:50:27,902 - [Consumer-1] Got item 80.1 from queue, writing to destination
+2025-10-18 11:50:27,902 - [Producer-1] Putting item 100 into queue
+2025-10-18 11:50:27,902 - [Consumer-1] Got item 90 from queue, writing to destination
+2025-10-18 11:50:27,902 - [Producer-1] Finished reading all items, marking queue as finished
+2025-10-18 11:50:27,902 - [Consumer-1] Got item 100 from queue, writing to destination
+2025-10-18 11:50:27,913 - [Consumer-1] Received None (finished signal), shutting down

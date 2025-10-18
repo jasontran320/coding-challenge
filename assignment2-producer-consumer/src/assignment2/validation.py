@@ -6,6 +6,8 @@ components (Container, BoundedQueue, Producer, Consumer) to ensure
 consistent type checking and data validation.
 """
 
+import logging
+import os
 from typing import Any
 
 
@@ -60,3 +62,28 @@ def is_positive_int(value: Any) -> bool:
         False
     """
     return isinstance(value, int) and not isinstance(value, bool) and value > 0
+
+
+def configure_logging(output_file: str = None) -> str:
+    """Configure logging for producer-consumer execution
+
+    Args:
+        output_file: Path to log file. If None, uses default output/report.txt
+
+    Returns:
+        Path to the log file
+    """
+    if output_file is None:
+        output_dir = os.path.join(os.path.dirname(__file__), '..', '..', 'output')
+        os.makedirs(output_dir, exist_ok=True)
+        output_file = os.path.join(output_dir, 'report.txt')
+
+    logging.basicConfig(
+        level=logging.DEBUG,
+        format='%(asctime)s - %(message)s',
+        handlers=[
+            logging.FileHandler(output_file, mode='w'),
+            logging.StreamHandler()
+        ]
+    )
+    return output_file

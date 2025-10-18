@@ -5,6 +5,7 @@ Run tests from project root:
     pytest assignment2-producer-consumer/tests/ -v
 """
 
+import logging
 import pytest
 import threading
 import time
@@ -13,7 +14,9 @@ from assignment2.solution import (
     Container, BoundedQueue, Producer, Consumer, ProducerConsumerCoordinator
 )
 
-# Test data path (if needed)
+# Disable logging during tests
+logging.disable(logging.CRITICAL)
+
 # For this assignment, we generate test data programmatically
 
 
@@ -322,7 +325,7 @@ class TestConsumer:
         destination = Container(5)
 
         # Create and run consumer
-        consumer = Consumer(queue, destination)
+        consumer = Consumer(destination, queue)
         consumer.start()
         consumer.join()
 
@@ -343,9 +346,9 @@ class TestConsumer:
         destination = Container(1)
 
         # Create consumers without explicit names
-        consumer1 = Consumer(queue, destination)
-        consumer2 = Consumer(queue, destination)
-        consumer3 = Consumer(queue, destination, name="CustomConsumer")
+        consumer1 = Consumer(destination, queue)
+        consumer2 = Consumer(destination, queue)
+        consumer3 = Consumer(destination, queue, name="CustomConsumer")
 
         # Check auto-generated names
         assert "Consumer-" in consumer1.name
@@ -357,51 +360,66 @@ class TestConsumer:
 
 
 class TestProducerConsumer:
-    """Test Producer and Consumer working together"""
-
-    def test_simple_transfer(self):
-        """Test transferring small amount of data"""
-        # TODO: Verify complete transfer of small dataset (4 items)
-        pass
-
-    def test_large_transfer(self):
-        """Test transferring large amount of data"""
-        # TODO: Verify complete transfer of large dataset (100+ items) without deadlock
-        pass
-
-    def test_empty_transfer(self):
-        """Test transferring empty amount of data"""
-        # TODO: Verify complete transfer of empty dataset (0 items)
-        pass
-
-    def test_mixed_data_types(self):
-        """Test transferring mixed integers and floats"""
-        # TODO: Verify both int and float types are preserved during transfer
-        pass
-
-
-class TestCoordinator:
     """Test ProducerConsumerCoordinator (Complete System)"""
 
-    def test_coordinator_setup(self):
-        """Test that coordinator sets up all components correctly"""
-        # TODO: Verify coordinator initializes all components with correct capacities
-        pass
+    def test_empty_dataset(self):
+        """Test that empty dataset raises ValueError"""
+        data = []
+        with pytest.raises(ValueError, match="Capacity must be a positive integer"):
+            ProducerConsumerCoordinator(data)
 
-    def test_data_transfer_correctness(self):
-        """Task 6: Test complete data transfer and verification"""
-        # TODO: Verify end-to-end transfer completes successfully with all data matching
-        pass
+    def test_single_element_dataset(self):
+        """Test transferring single element (edge case for queue capacity)"""
+        data = [42]
+        coordinator = ProducerConsumerCoordinator(data)
+        coordinator.run()
 
-    def test_verification_method(self):
-        """Test the verify() method"""
-        # TODO: Verify the verify() method correctly detects successful transfers
-        pass
+        assert coordinator.verify()
+        assert coordinator.destination.size() == 1
+        assert coordinator.destination.get(0) == 42
 
-    def test_order_preserved(self):
-        """Test that order of elements is preserved"""
-        # TODO: Verify elements appear in destination in same order as source
-        pass
+    def test_mixed_int_float_dataset(self):
+        """Test transferring mixed integers and floats"""
+        data = [10, 20.5, 30, 40.7, 50]
+        coordinator = ProducerConsumerCoordinator(data)
+        coordinator.run()
+
+        assert coordinator.verify()
+        assert coordinator.destination.size() == 5
+        assert coordinator.destination.get(0) == 10
+        assert coordinator.destination.get(1) == 20.5
+        assert isinstance(coordinator.destination.get(0), int)
+        assert isinstance(coordinator.destination.get(1), float)
+
+    def test_large_dataset(self):
+        """Test transferring large dataset"""
+        data = list(range(100))
+        coordinator = ProducerConsumerCoordinator(data)
+        coordinator.run()
+
+        assert coordinator.verify()
+        assert coordinator.destination.size() == 100
+
+    def test_verify_detects_type_mismatch(self):
+        """Test that verify() fails when types don't match"""
+        data = [10, 20, 30]
+        coordinator = ProducerConsumerCoordinator(data)
+        coordinator.run()
+
+        # Manually corrupt destination with wrong type
+        coordinator.destination._data[1] = 20.0  # Change int to float
+
+        assert not coordinator.verify()  # Should fail due to type mismatch
+
+    def test_invalid_data_types_rejected(self):
+        """Test that non-numeric data types are rejected"""
+        # Test with string
+        with pytest.raises(TypeError, match="Container expects integer or float"):
+            ProducerConsumerCoordinator(["invalid", "data"])
+
+        # Test with mixed valid and invalid
+        with pytest.raises(TypeError, match="Container expects integer or float"):
+            ProducerConsumerCoordinator([10, 20, "string", 30])
 
 
 if __name__ == "__main__":
