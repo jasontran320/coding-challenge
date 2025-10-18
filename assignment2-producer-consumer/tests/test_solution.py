@@ -233,10 +233,75 @@ class TestBoundedQueue:
 class TestProducer:
     """Test Producer thread (Task 4)"""
 
-    def test_producer_reads_all_items(self):
-        """Test that producer reads all items from source"""
-        # TODO: Verify producer transfers all items from source to queue
-        pass
+    def test_producer_transfers_all_items(self):
+        """Test that producer transfers all items from source to queue"""
+        # Setup: Create source with test data
+        source = Container(5)
+        source.add(10)
+        source.add(20)
+        source.add(30)
+        source.add(40)
+        source.add(50)
+
+        # Create queue with smaller capacity to test blocking behavior
+        queue = BoundedQueue(3)
+
+        # Create and run producer
+        producer = Producer(source, queue)
+        producer.start()
+
+        # Consume items to prevent deadlock
+        results = []
+        while True:
+            item = queue.get()
+            if item is None:  # Producer marked finished
+                break
+            results.append(item)
+
+        producer.join()
+
+        # Verify all items transferred in order
+        assert results == [10, 20, 30, 40, 50]
+
+    def test_producer_marks_queue_finished(self):
+        """Test that producer marks queue as finished after transferring all items"""
+        source = Container(3)
+        source.add(1)
+        source.add(2)
+        source.add(3)
+
+        queue = BoundedQueue(5)
+        producer = Producer(source, queue)
+
+        producer.start()
+        producer.join()
+
+        # Drain the queue
+        assert queue.get() == 1
+        assert queue.get() == 2
+        assert queue.get() == 3
+
+        # Queue should return None since it's finished and empty
+        assert queue.get() is None
+
+    def test_producer_auto_naming(self):
+        """Test that producer auto-generates names when not provided"""
+        source = Container(1)
+        source.add(42)
+        queue = BoundedQueue(1)
+
+        # Create producers without explicit names
+        producer1 = Producer(source, queue)
+        producer2 = Producer(source, queue)
+        producer3 = Producer(source, queue, name="CustomProducer")
+
+        # Check auto-generated names
+        assert "Producer-" in producer1.name
+        assert "Producer-" in producer2.name
+        assert producer1.name != producer2.name  # Should be unique
+
+        # Check custom name preserved
+        assert producer3.name == "CustomProducer"
 
 
 class TestConsumer:

@@ -223,25 +223,39 @@ class Producer(threading.Thread):
     Args:
         source: Container to read numbers from
         queue: BoundedQueue to write numbers to
-        name: Thread name for debugging
+        name: Thread name for debugging (auto-generated if not provided)
     """
 
-    def __init__(self, source: Container, queue: BoundedQueue, name: str = "Producer"):
+    _counter = 0
+    _counter_lock = threading.Lock()
+
+    def __init__(self, source: Container, queue: BoundedQueue, name: str = None):
         """Initialize producer thread
 
-        TODO: Set up the producer thread with references to source and queue
+        Args:
+            source: Container to read numbers from
+            queue: BoundedQueue to write numbers to
+            name: Thread name for debugging (auto-generated as "Producer-N" if not provided)
         """
-        # TODO: Implement initialization
-        pass
+        if name is None:
+            with Producer._counter_lock:
+                Producer._counter += 1
+                name = f"Producer-{Producer._counter}"
+
+        super().__init__(name=name)
+        self.source = source
+        self.queue = queue
 
     def run(self) -> None:
         """Read numbers from source container and put into queue
 
-        TODO: Read all items from source and transfer them to the queue, then signal completion
+        Transfers all items from source container to queue, then signals
+        completion by calling mark_finished() on the queue.
         """
-        # TODO: Implement producer logic
-        pass
-
+        for i in range(self.source.size()):
+            item = self.source.get(i)
+            self.queue.put(item)
+        self.queue.mark_finished()
 
 class Consumer(threading.Thread):
     """Task 5: Consumer thread that reads from queue to destination container
